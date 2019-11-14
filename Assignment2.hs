@@ -21,11 +21,12 @@ reverseEncode cipher offset char = alphabet !! (((fromMaybe (elemIndex char ciph
 
 findGuess :: Char -> [(Char, Char)] -> (Char, Char)
 findGuess letter guessList | (length guessList == 0) = (letter, letter)
-                           | (letter == snd (guessList !! 0)) = guessList !! 0
+                           | (letter == snd (guessList !! 0)) || (letter == fst (guessList !! 0)) = guessList !! 0
                            | otherwise = findGuess letter (tail guessList)
 
 letterSwap :: Reflector -> Char -> Char
-letterSwap ref letter = if (fst (findGuess letter ref) == letter) then snd (findGuess letter ref) else fst (findGuess letter ref)
+letterSwap ref letter | ((fst (findGuess letter ref)) == letter) = (snd (findGuess letter ref))
+                      | otherwise = (fst (findGuess letter ref)) 
 
 encodeRtoL :: Char -> Enigma -> Char
 encodeRtoL letter (SimpleEnigma rotL rotM rotR ref offs) = encode rotL 0 (encode rotM 0 (encode rotR 0 letter))
