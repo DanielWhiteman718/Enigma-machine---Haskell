@@ -13,11 +13,11 @@ data Enigma = SimpleEnigma Rotor Rotor Rotor Reflector Offsets
 alphabet :: String
 alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-{- Helper functions from Assignment 1 -}
+{- Helper functions from Assignment 1 (**Some modified**) -}
 encode :: Rotor -> Int -> Char -> Char
-encode cipher offset char = cipher !! (((alphaPos char) - offset) `mod` 26)
+encode cipher offset char = cipher !! (((alphaPos char) + offset) `mod` 26)
 reverseEncode :: Rotor -> Int -> Char -> Char
-reverseEncode cipher offset char = alphabet !! (((fromMaybe (elemIndex char cipher)) + offset) `mod` 26)
+reverseEncode cipher offset char = alphabet !! (((fromMaybe (elemIndex char cipher)) - offset) `mod` 26)
 findGuess :: Char -> [(Char, Char)] -> (Char, Char)
 findGuess letter guessList | (length guessList == 0) = (letter, letter)
                            | (letter == snd (guessList !! 0)) || (letter == fst (guessList !! 0)) = guessList !! 0
@@ -38,7 +38,11 @@ encodeRtoL letter (SimpleEnigma rotL rotM rotR ref offs) = encode rotL offL (enc
                                                         offL = offs !! 2
 
 encodeLtoR :: Char -> Enigma -> Char
-encodeLtoR letter (SimpleEnigma rotL rotM rotR ref offs) = reverseEncode rotR 0 (reverseEncode rotM 0 (reverseEncode rotL 0 letter))
+encodeLtoR letter (SimpleEnigma rotL rotM rotR ref offs) = reverseEncode rotR offR (reverseEncode rotM offM (reverseEncode rotL offL letter))
+                                                        where
+                                                        offR = offs !! 0
+                                                        offM = offs !! 1
+                                                        offL = offs !! 2
 
 incrementOffsets :: Offsets -> Offsets
 incrementOffsets (x:xs) | (length (x:xs) == 0) = []
@@ -59,5 +63,13 @@ ref = [('A','Y'),('B','R'),('C','U'),('D','H'),('E','Q'),('F','S'),('G','L'),('I
 enigmaEncode :: Char -> Enigma -> Char
 enigmaEncode letter (SimpleEnigma rotL rotM rotR ref offs) = (encodeLtoR (letterSwap ref (encodeRtoL letter sE)) sE)
                                                         where
-                                                        sE = (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs))
-                                                    
+                                                        sE = (SimpleEnigma rotL rotM rotR ref offs)
+                                                  
+enigmaEncodeMessage :: String -> Enigma -> String
+enigmaEncodeMessage message (SimpleEnigma rotL rotM rotR ref offs) | (length message == 0) = []
+                                                                   | (length message == 1) = [enigmaEncode (message !! 0) sEI] 
+                                                                   | otherwise = (enigmaEncode (head message) sEI):(enigmaEncodeMessage (tail message) sEI)
+                                                                  where
+                                                                  sE = (SimpleEnigma rotL rotM rotR ref offs)
+                                                                  sEI = (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs))
+                                                                
