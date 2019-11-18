@@ -8,7 +8,8 @@ import Data.Char
 type Rotor = Cipher
 type Reflector = [(Char, Char)]
 type Offsets = [Int]
-data Enigma = SimpleEnigma Rotor Rotor Rotor Reflector Offsets
+type Steckerboard = [(Char,Char)]
+data Enigma = SimpleEnigma Rotor Rotor Rotor Reflector Offsets | SteckeredEnigma Rotor Rotor Rotor Reflector Offsets Steckerboard
 -- Declaring a String constant for the alphabet
 alphabet :: String
 alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -24,25 +25,22 @@ findGuess letter guessList | (length guessList == 0) = (letter, letter)
                            | otherwise = findGuess letter (tail guessList)
 
 
+rotorEncode :: Rotor -> Int -> Char -> Char
+rotorEncode rotor offset letter = alphabet !! (  ((alphaPos (encode rotor 0 (alphabet !! (  ((alphaPos letter) + offset) `mod` 26 )))) - offset)  `mod` 26)
 
+reverseRotorEncode :: Rotor -> Int -> Char -> Char 
+reverseRotorEncode rotor offset letter = alphabet !! (  (alphaPos (reverseEncode rotor 0 (alphabet !! (  ((alphaPos letter) + offset) `mod` 26))) - offset)  `mod` 26)
 
 letterSwap :: Reflector -> Char -> Char
 letterSwap ref letter | ((fst (findGuess letter ref)) == letter) = (snd (findGuess letter ref))
-                      | otherwise = (fst (findGuess letter ref)) 
+                      | otherwise = (fst (findGuess letter ref))  
 
 encodeRtoL :: Char -> Enigma -> Char
-encodeRtoL letter (SimpleEnigma rotL rotM rotR ref offs) = encode rotL offL (encode rotM offM (encode rotR offR letter))
-                                                        where
-                                                        offR = offs !! 0
-                                                        offM = offs !! 1
-                                                        offL = offs !! 2
+encodeRtoL letter (SimpleEnigma rotL rotM rotR ref offs) = rotorEncode rotL (offs !! 2) (rotorEncode rotM (offs !! 1) (rotorEncode rotR (offs !! 0) letter))
 
 encodeLtoR :: Char -> Enigma -> Char
-encodeLtoR letter (SimpleEnigma rotL rotM rotR ref offs) = reverseEncode rotR offR (reverseEncode rotM offM (reverseEncode rotL offL letter))
-                                                        where
-                                                        offR = offs !! 0
-                                                        offM = offs !! 1
-                                                        offL = offs !! 2
+encodeLtoR letter (SimpleEnigma rotL rotM rotR ref offs) = reverseRotorEncode rotR (offs !! 0) (reverseRotorEncode rotM (offs !! 1) (reverseRotorEncode rotL (offs !! 2) letter))
+                                                        
 
 incrementOffsets :: Offsets -> Offsets
 incrementOffsets (x:xs) | (length (x:xs) == 0) = []
@@ -51,14 +49,19 @@ incrementOffsets (x:xs) | (length (x:xs) == 0) = []
                         | otherwise = (x + 1):xs
                      
 
-rotL :: String
-rotL = "BDFHJLCPRTXVZNYEIWGAKMUSQO"
-rotM :: String
-rotM = "AJDKSIRUXBLHWTMCQGZNPYFVOE"
-rotR :: String
-rotR = "EKMFLGDQVZNTOWYHXUSPAIBRCJ"
-ref :: [(Char, Char)]
-ref = [('A','Y'),('B','R'),('C','U'),('D','H'),('E','Q'),('F','S'),('G','L'),('I','P'),('J','X'),('K','N'),('M','O'),('T','Z'),('V','W')]
+
+
+
+
+
+
+
+
+
+{------"ABCDEFGHIJKLMNOPQRSTUVWXYZ"-}
+testMessage :: String
+testMessage = "INXTHEXENIGMAXMACHINEXEACHXROTORXHADXAXNOTCHSTOPXINXTHEXSPECIFICATIONCOMMAXIXHAVEXASSUMEDXTHATXTHATXNOTCHXISXALWAYSXATXPOSITTIONXTWENTYFIVEXZXXWHEREASXINXREALITYXITXWASXATXAXDIFFERENTXPOSITIONXFORXEACHXROTORSTOPXWHENXAXKEYXWASXPRESSEDCOMMAXTHEXVERYXFIRSTXTHINGXTHATXHAPPENEDXWASXTHATXTHEXROTORSXWEREXADVANCEDSTOPXTHEXRIGHTXROTORXISXROTATEDXBYXONESTOPXIFXITXHADXALREADYXBEENXROTATEDXTWENTYFIVEXTIMESXTHATXISXWASXATXPOSITIONXTWENTYFIVECOMMAXTHEXNOTCHXWOULDXCAUSEXTHEXMIDDLEXROTORXTOXALSOXROTATESTOPXIFXTHATXROTORXHADXALREADYXBEENXROTATEDXTWENTYFIVEXTIMECOMMAXITXINXTURNXWOULDXCAUSEXTHEXLEFTXROTORXTOXROTATESTOPXINXOTHERXWORDSCOMMAXFORXTHEXMIDDLEXROTORXTOXROTATEXONCECOMMAXTHEREXHADXTOXBEXTWENTYSIXXKEYXPRESSESSTOPXFORXTHEXLEFTXROTORXTOXROTATEXONCECOMMAXTHEREXHADXTOXBEXTWENTYSIXXTIMESXTWENTYSIXXKEYXPRESSESSTOPXTOXGETXALLXTHEXWAYXBACKXTOXZEROCOMMAZEROCOMMAZEROCOMMAXTHEREXHADXTOXBEXTWENTYSIXXTIMESXTWENTYSIXXTIMESXTWENTYSIXXKEYXPRESSEESSTOPTHEXDOWNSIDEXOFXTHEXSIMPLIFICATIONXTHATXIXHAVEXGIVENXISXTHATXTHEXONLINEXSIMULATORSXWILLXNOTXPROGRESSXTHEXSUBSEQUENTXROTORSXATXTHEXSAMEXTIMEXTHATXYOURXSIMULATIONXDOESSTOPXINXACTUALXFACTXROTORXONEXHADXAXNOTCHXATXPOSITIONXQCOMMAXROTORTWOXATXPOSITIONXECOMMAXROTORTHREEXATXPOSITIONXVCOMMAXROTORFOURXATXPOSITIONXJCOMMAXANDXROTORFIVEXATXPOSITIONXZSTOP"
+
 
 enigmaEncode :: Char -> Enigma -> Char
 enigmaEncode letter (SimpleEnigma rotL rotM rotR ref offs) = (encodeLtoR (letterSwap ref (encodeRtoL letter sE)) sE)
@@ -67,9 +70,6 @@ enigmaEncode letter (SimpleEnigma rotL rotM rotR ref offs) = (encodeLtoR (letter
                                                   
 enigmaEncodeMessage :: String -> Enigma -> String
 enigmaEncodeMessage message (SimpleEnigma rotL rotM rotR ref offs) | (length message == 0) = []
-                                                                   | (length message == 1) = [enigmaEncode (message !! 0) sEI] 
-                                                                   | otherwise = (enigmaEncode (head message) sEI):(enigmaEncodeMessage (tail message) sEI)
-                                                                  where
-                                                                  sE = (SimpleEnigma rotL rotM rotR ref offs)
-                                                                  sEI = (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs))
+                                                                   | (length message == 1) = [enigmaEncode (message !! 0) (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs))] 
+                                                                   | otherwise = (enigmaEncode (head message) (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs))):(enigmaEncodeMessage (tail message) (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs)))
                                                                 
