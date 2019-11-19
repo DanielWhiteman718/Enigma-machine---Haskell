@@ -8,7 +8,7 @@ import Data.Char
 type Rotor = Cipher
 type Reflector = [(Char, Char)]
 type Offsets = [Int]
-type Steckerboard = [(Char,Char)]
+type Steckerboard = [(Char, Char)]
 data Enigma = SimpleEnigma Rotor Rotor Rotor Reflector Offsets | SteckeredEnigma Rotor Rotor Rotor Reflector Offsets Steckerboard
 -- Declaring a String constant for the alphabet
 alphabet :: String
@@ -26,14 +26,18 @@ findGuess letter guessList | (length guessList == 0) = (letter, letter)
 
 
 rotorEncode :: Rotor -> Int -> Char -> Char
-rotorEncode rotor offset letter = alphabet !! (  ((alphaPos (encode rotor 0 (alphabet !! (  ((alphaPos letter) + offset) `mod` 26 )))) - offset)  `mod` 26)
+rotorEncode rotor offset letter = alphabet !! (((alphaPos(encode rotor 0 (alphabet !! (((alphaPos letter) + offset) `mod` 26)))) - offset) `mod` 26)
 
 reverseRotorEncode :: Rotor -> Int -> Char -> Char 
-reverseRotorEncode rotor offset letter = alphabet !! (  (alphaPos (reverseEncode rotor 0 (alphabet !! (  ((alphaPos letter) + offset) `mod` 26))) - offset)  `mod` 26)
+reverseRotorEncode rotor offset letter = alphabet !! ((alphaPos (reverseEncode rotor 0 (alphabet !! (((alphaPos letter) + offset) `mod` 26))) - offset)`mod` 26)
 
 letterSwap :: Reflector -> Char -> Char
 letterSwap ref letter | ((fst (findGuess letter ref)) == letter) = (snd (findGuess letter ref))
                       | otherwise = (fst (findGuess letter ref))  
+
+steckerLetterSwap :: Steckerboard -> Char -> Char
+steckerLetterSwap steckerboard letter | ((fst (findGuess letter steckerboard)) == letter) = (snd (findGuess letter steckerboard))
+                                      | otherwise = (fst (findGuess letter steckerboard)) 
 
 encodeRtoL :: Char -> Enigma -> Char
 encodeRtoL letter (SimpleEnigma rotL rotM rotR ref offs) = rotorEncode rotL (offs !! 2) (rotorEncode rotM (offs !! 1) (rotorEncode rotR (offs !! 0) letter))
@@ -48,7 +52,9 @@ incrementOffsets (x:xs) | (length (x:xs) == 0) = []
                         | (x == 25) = 0:(incrementOffsets xs)
                         | otherwise = (x + 1):xs
                      
-
+steckerLetter :: Steckerboard -> Char -> Char
+steckerLetter steckerboard letter | ((fst (findGuess letter steckerboard)) == letter) = (snd (findGuess letter steckerboard))
+                                  | otherwise = (fst (findGuess letter steckerboard))  
 
 
 
@@ -67,9 +73,15 @@ enigmaEncode :: Char -> Enigma -> Char
 enigmaEncode letter (SimpleEnigma rotL rotM rotR ref offs) = (encodeLtoR (letterSwap ref (encodeRtoL letter sE)) sE)
                                                         where
                                                         sE = (SimpleEnigma rotL rotM rotR ref offs)
+enigmaEncode letter (SteckeredEnigma rotL rotM rotR ref offs sb) = steckerLetter sb (encodeLtoR (letterSwap ref (encodeRtoL (steckerLetter sb letter) sE)) sE)
+                                                        where
+                                                        sE = (SimpleEnigma rotL rotM rotR ref offs)
+                                                        sTE = (SteckeredEnigma rotL rotM rotR ref offs sb)
                                                   
 enigmaEncodeMessage :: String -> Enigma -> String
 enigmaEncodeMessage message (SimpleEnigma rotL rotM rotR ref offs) | (length message == 0) = []
                                                                    | (length message == 1) = [enigmaEncode (message !! 0) (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs))] 
                                                                    | otherwise = (enigmaEncode (head message) (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs))):(enigmaEncodeMessage (tail message) (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs)))
-                                                                
+enigmaEncodeMessage message (SteckeredEnigma rotL rotM rotR ref offs sb) | (length message == 0) = []
+                                                                         | (length message == 1) = [enigmaEncode (message !! 0) (SteckeredEnigma rotL rotM rotR ref (incrementOffsets offs) sb)] 
+                                                                         | otherwise = (enigmaEncode (head message) (SteckeredEnigma rotL rotM rotR ref (incrementOffsets offs) sb)):(enigmaEncodeMessage (tail message) (SteckeredEnigma rotL rotM rotR ref (incrementOffsets offs) sb))                                                                 
