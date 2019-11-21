@@ -9,7 +9,11 @@ type Rotor = Cipher
 type Reflector = [(Char, Char)]
 type Offsets = [Int]
 type Steckerboard = [(Char, Char)]
-data Enigma = SimpleEnigma Rotor Rotor Rotor Reflector Offsets | SteckeredEnigma Rotor Rotor Rotor Reflector Offsets Steckerboard
+data Enigma = SimpleEnigma Rotor Rotor Rotor Reflector Offsets 
+            | SteckeredEnigma Rotor Rotor Rotor Reflector Offsets Steckerboard
+type Crib = (String, String)
+type Menu = [Int]
+
 -- Declaring a String constant for the alphabet
 alphabet :: String
 alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -84,4 +88,42 @@ enigmaEncodeMessage message (SimpleEnigma rotL rotM rotR ref offs) | (length mes
                                                                    | otherwise = (enigmaEncode (head message) (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs))):(enigmaEncodeMessage (tail message) (SimpleEnigma rotL rotM rotR ref (incrementOffsets offs)))
 enigmaEncodeMessage message (SteckeredEnigma rotL rotM rotR ref offs sb) | (length message == 0) = []
                                                                          | (length message == 1) = [enigmaEncode (message !! 0) (SteckeredEnigma rotL rotM rotR ref (incrementOffsets offs) sb)] 
-                                                                         | otherwise = (enigmaEncode (head message) (SteckeredEnigma rotL rotM rotR ref (incrementOffsets offs) sb)):(enigmaEncodeMessage (tail message) (SteckeredEnigma rotL rotM rotR ref (incrementOffsets offs) sb))                                                                 
+                                                                         | otherwise = (enigmaEncode (head message) (SteckeredEnigma rotL rotM rotR ref (incrementOffsets offs) sb)):(enigmaEncodeMessage (tail message) (SteckeredEnigma rotL rotM rotR ref (incrementOffsets offs) sb))
+
+
+{- findIndexes 'I' 0 "Increment" [0] -}                                                                         
+findIndexes :: Char -> Int -> String -> [Int] -> [Int]
+findIndexes letter cidx string indexes | ((length string) == 0) = []
+                                       | ((length string) == 1) = if ((string !! 0) == letter) then (tail (indexes ++ [cidx]))
+                                                                  else tail indexes
+                                       | ((head string) == letter) = findIndexes letter (cidx + 1) (tail string) (indexes ++ [cidx])
+                                       | otherwise = findIndexes letter (cidx + 1) (tail string) indexes
+
+findOpposite :: Crib -> Int -> Char
+findOpposite crib index = (snd crib) !! index
+
+{-Helpful data-}
+crib1 :: Crib
+crib1 = ("WETTERVORHERSAGEBISKAYA","RWIVTYRESXBFOGKUHQBAISE")
+
+crib2 :: Crib
+crib2 = ("ABC","ZAY")
+
+crib3 :: Crib
+crib3 = ("WETTER","RWIVTY")
+
+{- findSuccessors [5,6,3,6] "Increment" crib-}     
+{- findSuccessors [0] crib1 -}                                 
+findSuccessors :: [Int] -> Crib -> [[Int]]
+findSuccessors node crib | (length node == 0) = [[]]
+                         | (length node == 1) = [(findIndexes (findOpposite crib (head node)) 0 (fst crib) [0])]
+                         | otherwise = (findIndexes (findOpposite crib (head node)) 0 (fst crib) [0]):(findSuccessors (tail node) crib)
+    
+{-type Menu = [Int]-}                         
+
+longestMenu :: [Int] -> Crib -> Menu -> [Menu]
+longestMenu node crib menu | ((length node) == 0) = [menu]
+                           | ((length node) == 1) && (elem (head node) menu) = [menu]
+                           | ((length node) == 1) && (not(elem (head node) menu)) = (longestMenu (head (findSuccessors [head node] crib)) crib ((head node):menu))
+                           | (elem (head node) menu) = (longestMenu (tail node) crib menu)                                                           
+                           | otherwise = ( longestMenu (head (findSuccessors [head node] crib)) crib ((head node):menu) ) ++ (longestMenu (tail node) crib menu)
