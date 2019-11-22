@@ -111,7 +111,6 @@ crib2 = ("ABC","ZAY")
 
 crib3 :: Crib
 crib3 = ("WETTER","RWIVTY")
-
 {- findSuccessors [5,6,3,6] "Increment" crib-}     
 {- findSuccessors [0] crib1 -}                                 
 findSuccessors :: [Int] -> Crib -> [[Int]]
@@ -121,9 +120,20 @@ findSuccessors node crib | (length node == 0) = [[]]
     
 {-type Menu = [Int]-}                         
 
-longestMenu :: [Int] -> Crib -> Menu -> [Menu]
-longestMenu node crib menu | ((length node) == 0) = [menu]
-                           | ((length node) == 1) && (elem (head node) menu) = [menu]
-                           | ((length node) == 1) && (not(elem (head node) menu)) = (longestMenu (head (findSuccessors [head node] crib)) crib ((head node):menu))
-                           | (elem (head node) menu) = (longestMenu (tail node) crib menu)                                                           
-                           | otherwise = ( longestMenu (head (findSuccessors [head node] crib)) crib ((head node):menu) ) ++ (longestMenu (tail node) crib menu)
+findMenus :: [Int] -> Crib -> Menu -> [Menu]
+findMenus node crib menu | ((length node) == 0) = [menu]
+                         | ((length node) == 1) && (elem (head node) menu) = [menu]
+                         | ((length node) == 1) && (not(elem (head node) menu)) = (findMenus (head (findSuccessors [head node] crib)) crib ((head node):menu))
+                         | (elem (head node) menu) = (findMenus (tail node) crib menu)                                                           
+                         | otherwise = ( findMenus (head (findSuccessors [head node] crib)) crib ((head node):menu) ) ++ (findMenus (tail node) crib menu)
+
+findLongestMenu :: [Menu] -> Menu
+findLongestMenu menus = head (sortBy (\xs ys -> compare (length ys) (length xs)) menus)
+
+findLongestMenuEachIndex :: Int -> Crib -> [Menu]
+findLongestMenuEachIndex index crib | (index == length(fst crib)) = []
+                                    | (index == length(fst crib) - 1) = [findLongestMenu (findMenus [index] crib [])]
+                                    | otherwise = (findLongestMenu (findMenus [index] crib [])):(findLongestMenuEachIndex (index + 1) crib)
+
+longestMenu :: Crib -> Menu
+longestMenu crib = reverse(findLongestMenu(findLongestMenuEachIndex 0 crib))
