@@ -151,13 +151,17 @@ Output:"HQRFMNYYVUUNBHACFQDZYSABBUEXJJGJPSFQGNTAJNLNZEIEPUSAXSYEKUBAHXLJZEUCGRFL
         YNUREFGGTVMJYMJLYUNQKMMWYJQMZXDFVFSIEKYVFTMMFAJSLBQBCKWBDUGKCJSJLRYHGADWCWMTSTKRGGPYRBOLPGZUVVKPRKCFAEJWWVVPWAHEGHKDAVPMXVHBLPWIV
         YILHKDSKWCSDWLVHRLOSUHCSKUDTAVIIFRXUFBWFYZLAQWBQJADGJOFDEFWGVXSKEYQCKCFTZWMBIQNWLRAXJOONXTNJQMZCREOIQZYYPIVIQEXFSHAZIOKYXJHJCHIWG
         WWZSIAYJPJVBKWDFKZUOUBYIGVMLCIZWIFKDELOULELFBUBUEJMUTMGTQUDIGIKZLZKNDGYQUAHODPSHEBEEOSNHUBTNPNAUQKJIZFYXHDQOQBXSCRWICRMGBETZKZBUR
-        JCHITCUBFJJHSXOLXUQRGKWGJBPKNNODIBHFOCKYDEVRVZITAMPVZPZLEKFLZKHBVLYTWBFCCUWMXGLSRQALPJQPTISHPWDBQAMBMKSKIZCQCHLGPDUVRWYWW"   -}
+        JCHITCUBFJJHSXOLXUQRGKWGJBPKNNODIBHFOCKYDEVRVZITAMPVZPZLEKFLZKHBVLYTWBFCCUWMXGLSRQALPJQPTISHPWDBQAMBMKSKIZCQCHLGPDUVRWYWW"   
+        
+Input:  enigmaEncodeMessage "" (SimpleEnigma rotor1 rotor2 rotor3 reflectorB [0,0,0])
+
+Output: ""-}
 
 
 
 
 
-{- **Helper functions for longestMenu**-}
+{- **Helper functions for longestMenu** -}
 {- findIndexes(Helper function). Takes a character, starting index(0), 
    a string and a list of indexes. Returns a list of integers which are all
    the indexes where the letter is located in the string.
@@ -230,9 +234,15 @@ findLongestMenuEachIndex i c | (i == length(fst c)) = []
 {- longestMenu. Takes a crib.
    Returns the longest possible menu in the crib.-}                             
 longestMenu :: Crib -> Menu
-longestMenu crib = reverse(findLongestMenu(findLongestMenuEachIndex 0 crib))
+longestMenu crib | length (fst crib) == 0 = []
+                 | otherwise = reverse(findLongestMenu(findLongestMenuEachIndex 0 crib))
 
-{- Testing letterStats:
+{- Testing longestMenu :
 Input:  longestMenu ("WETTERVORHERSAGEBISKAYA","RWIVTYRESXBFOGKUHQBAISE") 
+Output: [13,14,19,22,1,0,5,21,12,7,4,3,6,8,18,16,9]  
 
-Output: [13,14,19,22,1,0,5,21,12,7,4,3,6,8,18,16,9]  -}
+Input:  longestMenu ("","")
+Output: []
+
+Input:  longestMenu ("F","U")
+Output: [0]  -}
