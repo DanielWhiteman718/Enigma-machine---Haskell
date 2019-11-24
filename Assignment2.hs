@@ -7,7 +7,7 @@ import Data.Char
 {- Types and variables -}
 type Rotor = Cipher
 type Reflector = [(Char, Char)]
-type Offsets = [Int]
+type Offsets = (Int, Int, Int)
 type Steckerboard = [(Char, Char)]
 data Enigma = SimpleEnigma Rotor Rotor Rotor Reflector Offsets 
             | SteckeredEnigma Rotor Rotor Rotor Reflector Offsets Steckerboard
@@ -30,6 +30,15 @@ findGuess letter guessList | (length guessList == 0) = (letter, letter)
 
 
 
+
+                           
+{- getOffset(Helper function). Takes a tuple of offsets and a number.
+   Returns the offset that corresponds to the given number. -}                           
+
+getOffset :: (Int, Int, Int) -> Int -> Int
+getOffset (x,y,z) a | (a == 1) = x
+                    | (a == 2) = y
+                    | otherwise = z
 
 
 {- rotorEncode(Helper function). Takes a rotor, an offset
@@ -63,7 +72,8 @@ letterSwap r l | ((fst (findGuess l r)) == l) = (snd (findGuess l r))
    l = Letter to be encoded-}
 
 encodeRtoL :: Char -> Enigma -> Char
-encodeRtoL l (SimpleEnigma rL rM rR rf os) = rotorEncode rL (os !! 2) (rotorEncode rM (os !! 1) (rotorEncode rR (os !! 0) l))
+encodeRtoL l (SimpleEnigma rL rM rR rf os) = rotorEncode rL (getOffset os 1) (rotorEncode rM (getOffset os 2) 
+                                                                (rotorEncode rR (getOffset os 3) l))
 
 
 {- encodeLtoR(Helper function). Takes a letter and enigma.
@@ -72,18 +82,18 @@ encodeRtoL l (SimpleEnigma rL rM rR rf os) = rotorEncode rL (os !! 2) (rotorEnco
    l = Letter to be encoded-}
 
 encodeLtoR :: Char -> Enigma -> Char
-encodeLtoR l (SimpleEnigma rL rM rR rf os) = reverseRotorEncode rR (os !! 0) (reverseRotorEncode rM (os !! 1) 
-                                                                             (reverseRotorEncode rL (os !! 2) l))
+encodeLtoR l (SimpleEnigma rL rM rR rf os) = reverseRotorEncode rR (getOffset os 3) (reverseRotorEncode rM (getOffset os 2) 
+                                                                             (reverseRotorEncode rL (getOffset os 1) l))
  
                                                                              
 {- incrementOffsets(Helper function). Takes a list of offsets.
    Returns a list of offsets after incrementing them appropriately.-}
 
 incrementOffsets :: Offsets -> Offsets
-incrementOffsets (x:xs) | (length (x:xs) == 0) = []
-                        | (length (x:xs) == 1) = if (((x:xs) !! 0) == 25) then [0] else [((x:xs) !! 0 + 1)]
-                        | (x == 25) = 0:(incrementOffsets xs)
-                        | otherwise = (x + 1):xs
+incrementOffsets (x,y,z) | (z < 25) = (x, y, z+1)
+                         | (y < 25) = (x, y+1, 0)
+                         | (x < 25) = (x+1, 0, 0)
+                         | otherwise = (0,0,0)
    
                         
 {- steckerLetter(Helper function). Takes a steckerboard and a letter.
@@ -98,7 +108,21 @@ steckerLetter sb l | ((fst (findGuess l sb)) == l) = (snd (findGuess l sb))
 {-**TEST DATA**-}
 testMessage :: String
 testMessage = "INXTHEXENIGMAXMACHINEXEACHXROTORXHADXAXNOTCHSTOPXINXTHEXSPECIFICATIONCOMMAXIXHAVEXASSUMEDXTHATXTHATXNOTCHXISXALWAYSXATXPOSITTIONXTWENTYFIVEXZXXWHEREASXINXREALITYXITXWASXATXAXDIFFERENTXPOSITIONXFORXEACHXROTORSTOPXWHENXAXKEYXWASXPRESSEDCOMMAXTHEXVERYXFIRSTXTHINGXTHATXHAPPENEDXWASXTHATXTHEXROTORSXWEREXADVANCEDSTOPXTHEXRIGHTXROTORXISXROTATEDXBYXONESTOPXIFXITXHADXALREADYXBEENXROTATEDXTWENTYFIVEXTIMESXTHATXISXWASXATXPOSITIONXTWENTYFIVECOMMAXTHEXNOTCHXWOULDXCAUSEXTHEXMIDDLEXROTORXTOXALSOXROTATESTOPXIFXTHATXROTORXHADXALREADYXBEENXROTATEDXTWENTYFIVEXTIMECOMMAXITXINXTURNXWOULDXCAUSEXTHEXLEFTXROTORXTOXROTATESTOPXINXOTHERXWORDSCOMMAXFORXTHEXMIDDLEXROTORXTOXROTATEXONCECOMMAXTHEREXHADXTOXBEXTWENTYSIXXKEYXPRESSESSTOPXFORXTHEXLEFTXROTORXTOXROTATEXONCECOMMAXTHEREXHADXTOXBEXTWENTYSIXXTIMESXTWENTYSIXXKEYXPRESSESSTOPXTOXGETXALLXTHEXWAYXBACKXTOXZEROCOMMAZEROCOMMAZEROCOMMAXTHEREXHADXTOXBEXTWENTYSIXXTIMESXTWENTYSIXXTIMESXTWENTYSIXXKEYXPRESSEESSTOPTHEXDOWNSIDEXOFXTHEXSIMPLIFICATIONXTHATXIXHAVEXGIVENXISXTHATXTHEXONLINEXSIMULATORSXWILLXNOTXPROGRESSXTHEXSUBSEQUENTXROTORSXATXTHEXSAMEXTIMEXTHATXYOURXSIMULATIONXDOESSTOPXINXACTUALXFACTXROTORXONEXHADXAXNOTCHXATXPOSITIONXQCOMMAXROTORTWOXATXPOSITIONXECOMMAXROTORTHREEXATXPOSITIONXVCOMMAXROTORFOURXATXPOSITIONXJCOMMAXANDXROTORFIVEXATXPOSITIONXZSTOP"
-
+steckerboard1 :: Steckerboard
+steckerboard1 = [
+    ('B','E'),
+    ('Q','R'),
+    ('T','Y'),
+    ('U','I'),
+    ('O','P'),
+    ('A','S'),
+    ('D','F'),
+    ('G','H'),
+    ('J','K'),
+    ('L','Z'),
+    ('X','C'),
+    ('V','W'),
+    ('N','M')]
 {- enigmaEncode. Takes a letter and a simple enigma
    or a letter and a steckered enigma. Returns the encoded letter.
    lt = letter to be encoded, rL = left rotor, rM = middle rotor,
@@ -118,6 +142,7 @@ enigmaEncode lt (SteckeredEnigma rL rM rR rf os sb) = steckerLetter sb (encodeLt
    or a message and a steckered enigma. Returns the encoded message.
    m = message to be encoded, rL = left rotor, rM = middle rotor,
    rR = right rotor, os = offsets, sb = steckerboard-}
+
 
 enigmaEncodeMessage :: String -> Enigma -> String
 enigmaEncodeMessage m (SimpleEnigma rL rM rR rf os) | (length m == 0) = []
@@ -166,7 +191,7 @@ Output: ""-}
    a string and a list of indexes. Returns a list of integers which are all
    the indexes where the letter is located in the string.
    l = letter, ci = current index, text = string potentially containing the letter,
-   is = list of indexes-}
+   is = list of indexes -}
 
 findIndexes :: Char -> Int -> String -> [Int] -> [Int]
 findIndexes l ci text is | ((length text) == 0) = []
